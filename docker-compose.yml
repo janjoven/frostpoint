@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-frostpoint}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-frostpoint}
+      POSTGRES_DB: ${POSTGRES_DB:-frostpoint}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-frostpoint}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-frostpoint}:${POSTGRES_PASSWORD:-frostpoint}@db:5432/${POSTGRES_DB:-frostpoint}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@frostpoint.ph}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Frostpoint123!}
+      SEED_DEMO: ${SEED_DEMO:-true}
+      ORS_API_KEY: ${ORS_API_KEY:-}
+    volumes:
+      - proofs:/data/proofs
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./frontend
+    ports:
+      - "${WEB_PORT:-8088}:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  proofs:
