@@ -7,7 +7,7 @@ import { Skeleton } from "./ui";
 const MapView = lazy(() => import("./Map"));
 
 /** Lets the customer drop a pin on their door: current GPS position, or tap/drag on the map. */
-export function PinPicker({ value, onChange }: { value: LngLat | null; onChange: (p: LngLat | null) => void }) {
+export function PinPicker({ value, onChange, compact = false }: { value: LngLat | null; onChange: (p: LngLat | null) => void; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -31,22 +31,22 @@ export function PinPicker({ value, onChange }: { value: LngLat | null; onChange:
   };
 
   return (
-    <div className="stack" style={{ gap: 8 }}>
+    <div className={`stack pin-picker${compact ? " pin-picker-compact" : ""}`} style={{ gap: 8 }}>
       <div className="stack" style={{ gap: 2 }}>
-        <strong>Pin your location <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></strong>
-        <small className="muted">Helps the rider find you and lets you follow your delivery on a map.</small>
+        <div className="pin-picker-heading"><strong>Pin your location <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></strong>{compact && value && <button type="button" className="btn ghost icon" aria-label="Remove delivery pin" title="Remove pin" onClick={() => { onChange(null); setMsg(""); }}><X size={16} aria-hidden="true" /></button>}</div>
+        <small className="muted">{compact ? value ? "Pin saved. You can adjust it on the map." : "Help your rider find your address." : "Helps the rider find you and lets you follow your delivery on a map."}</small>
       </div>
-      <div className="row">
+      <div className="row pin-picker-actions">
         <button type="button" className="btn sm" onClick={useMyLocation} disabled={busy}><Crosshair size={18} aria-hidden="true" /> {busy ? "Locating…" : "Use my current location"}</button>
-        {!open && !value && <button type="button" className="btn sm" onClick={() => setOpen(true)}><MapPin size={18} aria-hidden="true" /> Choose on map</button>}
-        {value && <button type="button" className="btn sm ghost" onClick={() => { onChange(null); setMsg(""); }}><X size={16} aria-hidden="true" /> Remove pin</button>}
+        {compact ? <button type="button" className="btn sm" aria-expanded={open} onClick={() => setOpen(!open)}><MapPin size={18} aria-hidden="true" />{open ? "Hide map" : value ? "View / adjust pin" : "Choose on map"}</button> : !open && !value && <button type="button" className="btn sm" onClick={() => setOpen(true)}><MapPin size={18} aria-hidden="true" /> Choose on map</button>}
+        {!compact && value && <button type="button" className="btn sm ghost" onClick={() => { onChange(null); setMsg(""); }}><X size={16} aria-hidden="true" /> Remove pin</button>}
       </div>
-      {(open || value) && (
-        <Suspense fallback={<Skeleton h={240} />}>
-          <MapView pin={value} onPick={pick} height={240} label="Map. Tap to place your delivery pin." />
+      {(open || (!compact && value)) && (
+        <Suspense fallback={<Skeleton h={compact ? 180 : 240} />}>
+          <MapView pin={value} onPick={pick} height={compact ? 180 : 240} label="Map. Tap to place your delivery pin." />
         </Suspense>
       )}
-      <small aria-live="polite" className={msg ? "" : "muted"}>{msg || (value ? "Pin set. Tap the map or drag the pin to adjust." : open ? "Tap the map to drop a pin." : "")}</small>
+      <small aria-live="polite" className={msg ? "" : "muted"}>{msg || (open && value ? "Tap the map or drag the pin to adjust." : open ? "Tap the map to drop a pin." : !compact && value ? "Pin set. Tap the map or drag the pin to adjust." : "")}</small>
     </div>
   );
 }

@@ -1,15 +1,15 @@
-import { CheckCircle, Info, Moon, Sun, Warning, X, XCircle } from "@phosphor-icons/react";
+import { CheckCircle, Info, Warning, X, XCircle } from "@phosphor-icons/react";
 import { ReactNode, useEffect, useId, useRef, useState } from "react";
 import { useUI } from "../store";
 
-export function Logo({ size = 32 }: { size?: number }) {
+export function Logo({ size = 40 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-      <rect width="64" height="64" rx="16" fill="var(--primary)" />
-      <path d="M32 10v44M12 21l40 22M52 21 12 43" stroke="#E0F2FE" strokeWidth="5" strokeLinecap="round" />
-      <circle cx="32" cy="32" r="6" fill="#38BDF8" />
-    </svg>
+    <img className="brand-logo" src="/branding/frost-point-logo-128.webp" srcSet="/branding/frost-point-logo-128.webp 128w, /branding/frost-point-logo-384.webp 384w" sizes={`${size}px`} width={size} height={size} alt="" aria-hidden="true" decoding="async" />
   );
+}
+
+export function LogoName() {
+  return <img className="brand-wordmark" src="/branding/frost-point-name-256.webp" srcSet="/branding/frost-point-name-256.webp 256w, /branding/frost-point-name-512.webp 512w" sizes="(max-width: 392px) calc(100vw - 232px), 160px" width={160} height={53} alt="Frostpoint" decoding="async" />;
 }
 
 export function Button({ loading, children, className = "", ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }) {
@@ -143,15 +143,6 @@ function useOnline() {
     return () => { removeEventListener("online", u); removeEventListener("offline", d); };
   }, []);
   return on;
-}
-
-export function ThemeToggle() {
-  const { theme, toggleTheme } = useUI();
-  return (
-    <button className="btn ghost icon" onClick={toggleTheme} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
-      {theme === "dark" ? <Sun size={22} aria-hidden="true" /> : <Moon size={22} aria-hidden="true" />}
-    </button>
-  );
 }
 
 const STATUS_UI: Record<string, { cls: string; icon: ReactNode }> = {

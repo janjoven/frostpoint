@@ -47,8 +47,8 @@ export default function Reports() {
           <button className="btn" onClick={() => window.print()}><Printer size={20} aria-hidden="true" /> Print</button>
         </div>
       </div>
-      <div className="seg" role="tablist" aria-label="Report period">
-        {PERIODS.map((p) => <button key={p} role="tab" aria-selected={period === p} onClick={() => setPeriod(p)} style={{ textTransform: "capitalize" }}>{p}</button>)}
+      <div className="admin-orders-filters report-period-filters" role="group" aria-label="Report period">
+        {PERIODS.map((p) => <button type="button" key={p} aria-pressed={period === p} onClick={() => setPeriod(p)} style={{ textTransform: "capitalize" }}>{p}</button>)}
       </div>
       {q.isError ? <ErrorState error={q.error} retry={() => q.refetch()} /> : (
         <>

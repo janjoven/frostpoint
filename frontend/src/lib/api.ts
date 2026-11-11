@@ -1,3 +1,5 @@
+import { MOCK_MODE } from "./mockMode";
+
 let accessToken = "";
 let refreshing: Promise<boolean> | null = null;
 
@@ -33,6 +35,11 @@ async function refreshToken(): Promise<boolean> {
 }
 
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown; form?: FormData } = {}, retry = true): Promise<T> {
+  if (MOCK_MODE) {
+    const { mockRequest } = await import("../mocks/api");
+    try { return await mockRequest(path, opts) as T; }
+    catch (e) { throw new ApiError((e as { status?: number }).status ?? 400, (e as Error).message); }
+  }
   const headers: Record<string, string> = {};
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
@@ -55,12 +62,13 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
   return data as T;
 }
 
-const FLAG = "fp-has-session";
+const FLAG = MOCK_MODE ? "fp-mock-has-session" : "fp-has-session";
 export const markSession = (on: boolean) => {
   try { on ? localStorage.setItem(FLAG, "1") : localStorage.removeItem(FLAG); } catch { /* storage unavailable */ }
 };
 // Skip the refresh call (and its 401) for visitors who never signed in on this device.
 export async function restoreSession() {
+  if (MOCK_MODE) return (await import("../mocks/api")).mockUser();
   let hinted = true;
   try { hinted = !!localStorage.getItem(FLAG); } catch { /* assume yes */ }
   if (!hinted) return null;

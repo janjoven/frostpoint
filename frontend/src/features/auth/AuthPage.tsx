@@ -1,7 +1,7 @@
 import { Eye, EyeSlash } from "@phosphor-icons/react";
 import { FormEvent, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Button, Field, Logo, ThemeToggle } from "../../components/ui";
+import { Button, Field, Logo, LogoName } from "../../components/ui";
 import { PH_MOBILE, cleanPhone } from "../../lib/format";
 import { homePath, useAuth } from "../../store";
 
@@ -42,8 +42,7 @@ export default function AuthPage() {
     <main id="main" style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 16 }}>
       <div className="stack" style={{ width: "100%", maxWidth: 420 }}>
         <div className="row spread nowrap">
-          <span className="brand"><Logo /> FROSTPOINT</span>
-          <ThemeToggle />
+          <span className="brand"><Logo /><LogoName /></span>
         </div>
         <form className="card stack" onSubmit={submit} noValidate>
           <h1>{mode === "login" ? "Welcome back" : "Create your account"}</h1>

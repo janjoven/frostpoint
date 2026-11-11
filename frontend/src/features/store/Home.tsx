@@ -1,4 +1,4 @@
-import { ArrowCounterClockwise, MagnifyingGlass, Plus, Snowflake } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, MagnifyingGlass, ShoppingCart, Snowflake } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -19,18 +19,23 @@ function Row({ p }: { p: Product }) {
     <article className="card prod-row">
       <Link to={`/product/${p.id}`} className="prod-art" tabIndex={-1} aria-hidden="true"><ProductArt category={p.category} compact /></Link>
       <div className="prod-info">
-        <h2><Link to={`/product/${p.id}`}>{p.name}</Link>{p.badge && <span className="badge" style={{ marginLeft: 6 }}>{p.badge}</span>}</h2>
+        <div className="prod-heading">
+          <h2><Link to={`/product/${p.id}`}>{p.name}</Link></h2>
+          {p.badge && <span className="badge">{p.badge}</span>}
+        </div>
         <p className="muted wrap-any">{p.description}</p>
-        <div className="row nowrap" style={{ gap: 8, flexWrap: "wrap" }}>
-          <span className="num"><strong>{peso(p.price)}</strong><small className="muted">/{p.uom}</small></span>
-          {p.min_order_qty > 1 && <small className="muted">min {p.min_order_qty} {p.uom}</small>}
+        <div className="prod-availability">
           {low && <span className="badge warn">Only {p.stock} left</span>}
           {out && <span className="badge bad">Out of stock</span>}
         </div>
       </div>
+      <div className="prod-price">
+        <span className="num"><strong>{peso(p.price)}</strong><small className="muted">/{p.uom}</small></span>
+        {p.min_order_qty > 1 && <small className="muted">min {p.min_order_qty} {p.uom}</small>}
+      </div>
       <div className="prod-act">
         {out ? null : qty ? <Stepper value={qty} min={p.min_order_qty} max={p.stock} label={p.name} onChange={(v) => set(p.id, v)} />
-          : <button className="btn primary sm" aria-label={`Add ${p.name} to cart`} onClick={() => set(p.id, p.min_order_qty)}><Plus size={16} aria-hidden="true" /> Add</button>}
+          : <button className="btn primary sm" aria-label={`Add ${p.name} to cart`} onClick={() => set(p.id, p.min_order_qty)}><ShoppingCart size={16} aria-hidden="true" /> Add to cart</button>}
       </div>
     </article>
   );
@@ -68,22 +73,28 @@ export default function Home() {
       )}
       <h1 className="sr-only">Shop</h1>
       {usual.length > 0 && (
-        <section className="card row nowrap" aria-label="Your usual order">
-          <div className="grow">
-            <small className="muted" style={{ textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 600 }}>Your usual</small>
-            <div className="wrap-any"><strong>{usual.map((l) => `${l.qty} ${l.p.uom} ${l.p.name}`).join(" · ")}</strong></div>
-            <small className="muted num">{peso(usualTotal)} + delivery</small>
+        <section className="card row nowrap usual-card" aria-label="Your usual order">
+          <div className="grow usual-copy">
+            <small className="muted usual-label">Your usual</small>
+            <div className="wrap-any usual-items"><strong>{usual.map((l) => `${l.qty} ${l.p.uom} ${l.p.name}`).join(" · ")}</strong></div>
+            <small className="muted num usual-price">{peso(usualTotal)} + delivery</small>
           </div>
-          <button className="btn primary" onClick={reorder}><ArrowCounterClockwise size={18} aria-hidden="true" /> Reorder</button>
+          <button className="btn primary sm" onClick={reorder}><ArrowCounterClockwise size={16} aria-hidden="true" /> Reorder</button>
         </section>
       )}
-      <label className="row nowrap" style={{ gap: 8 }}>
-        <MagnifyingGlass size={22} aria-hidden="true" /><span className="sr-only">Search products</span>
-        <input className="input" type="search" placeholder="Search ice, water…" value={term} onChange={(e) => setTerm(e.target.value)} />
-      </label>
-      <div className="pill-filters" role="group" aria-label="Categories">
-        {cats.map((c) => <button key={c} className="pill" aria-pressed={cat === c} onClick={() => setCat(c)}>{c}</button>)}
-      </div>
+      <section className="catalog-controls" aria-label="Find products">
+        <label className="catalog-search">
+          <MagnifyingGlass size={20} aria-hidden="true" />
+          <span className="sr-only">Search products</span>
+          <input className="input" type="search" placeholder="Search ice, water…" value={term} onChange={(e) => setTerm(e.target.value)} />
+        </label>
+        <div className="pill-filters catalog-categories" role="group" aria-label="Categories">
+          {cats.map((c) => <button key={c} className="pill" aria-pressed={cat === c} onClick={(e) => {
+            setCat(c);
+            e.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" });
+          }}>{c}</button>)}
+        </div>
+      </section>
       {q.isLoading ? <div className="stack"><Skeleton h={96} /><Skeleton h={96} /><Skeleton h={96} /></div> : q.isError ? <ErrorState error={q.error} retry={() => q.refetch()} /> : !list.length ? (
         <Empty icon={<Snowflake size={32} aria-hidden="true" />} title="No products found" hint="Try a different search." />
       ) : (

@@ -12,10 +12,24 @@ docker compose up --build
 - Seeded admin: `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` (default `admin@frostpoint.ph` / `Frostpoint123!`)
 - Demo data (60 orders, `customer1@example.com` / `Customer123!`, `staff@frostpoint.ph` / `Staff12345!`, `rider@frostpoint.ph` / `Rider12345!`) loads when `SEED_DEMO=true`. **Set it to `false` and change every password before real use.**
 
+## Frontend UI development (no backend required)
+
+In PowerShell:
+
+```powershell
+cd frontend
+npm ci
+npm run dev:mock
+```
+
+Open the URL printed by Vite (usually http://localhost:5173). Mock mode starts as a customer. The floating **Mock mode** controls let you preview Guest, Customer, Admin, Owner, Staff, and Rider screens. Select Guest to review sign-in and registration. Demo emails include `customer1@example.com`, `admin@frostpoint.ph`, `owner@frostpoint.ph`, `staff@frostpoint.ph`, and `rider@frostpoint.ph`; any password works here.
+
+The catalog, checkout, orders, tracking, business dashboard, reports, users, settings, promotions, and support use browser-local fixtures. Edits persist after refresh; **Reset demo** restores the sample data. Data is shared between demo roles in the same browser. Tracking and pricing are simulated, PDF/print use sample report data, and Excel export requires the real API. Map tiles still require an internet connection. Mock mode never sends requests to the backend; it runs only with `dev:mock` and is disabled in production builds. Use `npm run dev` to return to the real API workflow.
+
 ## Layout
 - `backend/` FastAPI + SQLAlchemy 2 + Alembic. Pricing, stock, status transitions and role checks are enforced server-side (`app/services/core.py`, `app/deps.py`).
 - `frontend/` Vite + React + TypeScript, `vite-plugin-pwa` (installable, offline shell, update toast).
-- `design-system/frostpoint/MASTER.md` design rules (frosty glass, light + dark tokens in `frontend/src/styles/app.css`).
+- `design-system/frostpoint/MASTER.md` design rules (frosty glass, light theme tokens in `frontend/src/styles/app.css`).
 
 ## Checks
 ```bash
