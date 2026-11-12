@@ -10,12 +10,12 @@ import { ask } from "../../store";
 export default function Broadcast() {
   const q = useQuery({ queryKey: ["announcements"], queryFn: () => api<any[]>("/admin/announcements") });
   const form = useRef<HTMLFormElement>(null);
-  const send = useAct((b: object) => api("/admin/announcements", { body: b }), { invalidate: ["announcements"], success: "Promotion sent to all customers" });
+  const send = useAct((b: object) => api("/admin/announcements", { body: b }), { invalidate: ["announcements", "promos"], success: "Promotion sent to all customers" });
   const del = useAct(async (a: { id: number; title: string }) => {
     const ok = await ask({ title: `Delete “${a.title}”?`, confirm: "Delete", danger: true });
     if (!ok) throw new Error("Cancelled");
     return api(`/admin/announcements/${a.id}`, { method: "DELETE" });
-  }, { invalidate: ["announcements"], success: "Promotion deleted" });
+  }, { invalidate: ["announcements", "promos"], success: "Promotion deleted" });
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

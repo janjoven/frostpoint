@@ -11,6 +11,14 @@ const sum = (rows: Row[], key: string) => rows.reduce((n, r) => n + Number(r[key
 export const mockRoles = ["guest", "customer", "admin", "owner", "staff", "rider"] as const;
 export type MockRole = typeof mockRoles[number];
 
+function demoPromotions() {
+  return [
+    { id: 1, title: "Cool days, fresh deliveries", message: "Free delivery on orders over PHP 500. Stock up for your next gathering!" },
+    { id: 2, title: "Keep every gathering cool", message: "From family celebrations to busy weekends, find crushed ice, ice blocks and ice tubes for your plans." },
+    { id: 3, title: "Fresh water, delivered to your door", message: "Running low on drinking water? Add purified water to your order and choose a delivery time that works for you." },
+  ].map((promotion) => ({ ...promotion, starts_at: null, ends_at: null, created_at: iso() }));
+}
+
 function seed() {
   const users: (User & Row)[] = [
     [1, "customer", "Maria Santos", "customer1@example.com"],
@@ -49,7 +57,8 @@ function seed() {
     addresses: [{ id: 1, customer_id: 1, label: "Home", location: "MASBATE CITY", address: "Zone 3, Masbate City", lat: 12.371, lng: 123.624, is_default: true }] as Row[],
     iceRates: [{ id: 1, location: "MASBATE CITY", per_piece_rate: "50", flat_fee: null }, { id: 2, location: "MOBO", per_piece_rate: null, flat_fee: "150" }] as Row[],
     fixedRates: ["Crushed Ice", "Ice Tube", "Purified Water"].map((category, i) => ({ id: i + 1, category, location: "MASBATE CITY", fee: "12" })) as Row[],
-    announcements: [{ id: 1, title: "Cool days, fresh deliveries", message: "Free delivery on orders over PHP 500. Stock up for your next gathering!", starts_at: iso(2), ends_at: iso(-7), created_at: iso(2) }] as Row[],
+    promotionSeedVersion: 1,
+    announcements: demoPromotions() as Row[],
     messages: [{ id: 1, customer_id: 1, sender: "customer", body: "Hi! Can I schedule a water delivery for tomorrow?", created_at: iso() }, { id: 2, customer_id: 1, sender: "admin", body: "Of course! Choose your preferred time at checkout.", created_at: iso() }] as Row[],
     activity: [{ id: 1, action: "Added", description: "Demo catalog and orders loaded", user_name: "Alex Admin", user_email: "admin@frostpoint.ph", created_at: iso(), meta: {} }] as Row[],
   };
@@ -57,7 +66,22 @@ function seed() {
 
 type Database = ReturnType<typeof seed>;
 function read(): Database {
-  try { const saved = localStorage.getItem(KEY); if (saved) return JSON.parse(saved); } catch { /* private browsing */ }
+  try {
+    const saved = localStorage.getItem(KEY);
+    if (saved) {
+      const data: Database = JSON.parse(saved);
+      // Add carousel examples to existing demos once, preserving user-created data.
+      if (!data.promotionSeedVersion) {
+        for (const promotion of demoPromotions()) {
+          if (!data.announcements.some((item) => item.title === promotion.title)) {
+            data.announcements.push({ ...promotion, id: Math.max(0, ...data.announcements.map((item) => Number(item.id))) + 1 });
+          }
+        }
+        data.promotionSeedVersion = 1;
+      }
+      return data;
+    }
+  } catch { /* private browsing */ }
   return seed();
 }
 let db = read();

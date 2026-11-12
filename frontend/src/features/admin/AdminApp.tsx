@@ -1,9 +1,10 @@
-import { CaretDoubleLeft, CaretDoubleRight, ChartLine, ClockCounterClockwise, Package, Receipt, Megaphone, Gear, Headset, House, List, SignOut, Users as UsersIcon, X } from "@phosphor-icons/react";
+import { CaretDoubleLeft, CaretDoubleRight, ChartLine, ClockCounterClockwise, Code, Graph, Package, Receipt, Megaphone, Gear, Headset, House, List, SignOut, Users as UsersIcon, X } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { ReactNode, Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Logo, LogoName, Skeleton } from "../../components/ui";
 import { api } from "../../lib/api";
+import { UI_EDITOR_MODE } from "../../lib/mockMode";
 import { useAuth } from "../../store";
 
 const Dashboard = lazy(() => import("./Dashboard"));
@@ -15,6 +16,8 @@ const Broadcast = lazy(() => import("./Broadcast"));
 const SettingsPage = lazy(() => import("./Settings"));
 const Support = lazy(() => import("./Support"));
 const Activity = lazy(() => import("./Activity"));
+const AMLNetwork = lazy(() => import("./AMLNetwork"));
+const DeveloperSettings = UI_EDITOR_MODE ? lazy(() => import("../../devtools/DeveloperSettings")) : null;
 
 type Item = { to: string; label: string; icon: ReactNode; owner?: boolean };
 const ITEMS: Item[] = [
@@ -23,6 +26,7 @@ const ITEMS: Item[] = [
   { to: "products", label: "Products", icon: <Package size={22} aria-hidden="true" /> },
   { to: "support", label: "Support", icon: <Headset size={22} aria-hidden="true" /> },
   { to: "reports", label: "Reports", icon: <ChartLine size={22} aria-hidden="true" /> },
+  { to: "aml-network", label: "AML Network", icon: <Graph size={22} aria-hidden="true" /> },
   { to: "users", label: "Users", icon: <UsersIcon size={22} aria-hidden="true" />, owner: true },
   { to: "broadcast", label: "Broadcast", icon: <Megaphone size={22} aria-hidden="true" /> },
   { to: "settings", label: "Settings", icon: <Gear size={22} aria-hidden="true" /> },
@@ -39,7 +43,8 @@ export default function AdminApp() {
   const [desktop, setDesktop] = useState(() => window.matchMedia(DESKTOP).matches);
   const sidebar = useRef<HTMLElement>(null);
   const loc = useLocation();
-  const items = ITEMS.filter((i) => !i.owner || user!.role !== "staff");
+  const items: Item[] = ITEMS.filter((i) => !i.owner || user!.role !== "staff");
+  if (UI_EDITOR_MODE && user?.role === "admin") items.push({ to: "developer-mode", label: "Developer Mode", icon: <Code size={22} aria-hidden="true" /> });
   const stats = useQuery({ queryKey: ["stats"], queryFn: () => api("/admin/stats"), refetchInterval: 30_000 });
   const unread = stats.data?.unread_support ?? 0;
   useLayoutEffect(() => {
@@ -115,11 +120,13 @@ export default function AdminApp() {
               <Route path="orders" element={<Orders />} />
               <Route path="products" element={<Products />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="aml-network/*" element={<AMLNetwork />} />
               <Route path="users" element={user!.role === "staff" ? <Navigate to="/admin" replace /> : <UsersPage />} />
               <Route path="broadcast" element={<Broadcast />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="support" element={<Support />} />
               <Route path="activity" element={user!.role === "staff" ? <Navigate to="/admin" replace /> : <Activity />} />
+              {DeveloperSettings && <Route path="developer-mode" element={user!.role === "admin" ? <DeveloperSettings /> : <Navigate to="/admin" replace />} />}
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
           </Suspense>

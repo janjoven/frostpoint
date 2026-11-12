@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ProductArt } from "../../components/ProductArt";
+import { PromotionCarousel, Promotion } from "../../components/PromotionCarousel";
 import { Stepper } from "../../components/Stepper";
 import { Empty, ErrorState, Skeleton } from "../../components/ui";
 import { api } from "../../lib/api";
@@ -16,7 +17,7 @@ function Row({ p }: { p: Product }) {
   const out = p.stock < p.min_order_qty;
   const low = !out && p.stock <= p.low_stock_at;
   return (
-    <article className="card prod-row">
+    <article className="card prod-row" data-ui-id={`product-${p.id}`}>
       <Link to={`/product/${p.id}`} className="prod-art" tabIndex={-1} aria-hidden="true"><ProductArt category={p.category} compact /></Link>
       <div className="prod-info">
         <div className="prod-heading">
@@ -44,7 +45,7 @@ function Row({ p }: { p: Product }) {
 export default function Home() {
   const user = useAuth((s) => s.user);
   const q = useQuery({ queryKey: ["products"], queryFn: () => api<Product[]>("/products") });
-  const promos = useQuery({ queryKey: ["promos"], queryFn: () => api<any[]>("/promotions") });
+  const promos = useQuery({ queryKey: ["promos"], queryFn: () => api<Promotion[]>("/promotions"), refetchInterval: 60_000 });
   const mine = useQuery({ queryKey: ["my-orders"], queryFn: () => api<any[]>("/orders/mine"), enabled: !!user });
   const lines = useCart((s) => s.lines);
   const setLine = useCart((s) => s.set);
@@ -65,15 +66,10 @@ export default function Home() {
 
   return (
     <div className="stack" style={{ maxWidth: 720, margin: "0 auto", paddingBottom: count ? 72 : 0 }}>
-      {promos.data?.[0] && (
-        <section className="hero" aria-label="Promotion">
-          <strong style={{ fontSize: 18 }}>{promos.data[0].title}</strong>
-          <p className="wrap-any">{promos.data[0].message}</p>
-        </section>
-      )}
+      <PromotionCarousel key={promos.data?.map((p) => p.id).join(",")} promotions={promos.data ?? []} />
       <h1 className="sr-only">Shop</h1>
       {usual.length > 0 && (
-        <section className="card row nowrap usual-card" aria-label="Your usual order">
+        <section className="card row nowrap usual-card" aria-label="Your usual order" data-ui-id="usual-order">
           <div className="grow usual-copy">
             <small className="muted usual-label">Your usual</small>
             <div className="wrap-any usual-items"><strong>{usual.map((l) => `${l.qty} ${l.p.uom} ${l.p.name}`).join(" · ")}</strong></div>
@@ -82,7 +78,7 @@ export default function Home() {
           <button className="btn primary sm" onClick={reorder}><ArrowCounterClockwise size={16} aria-hidden="true" /> Reorder</button>
         </section>
       )}
-      <section className="catalog-controls" aria-label="Find products">
+      <section className="catalog-controls" aria-label="Find products" data-ui-id="catalog-controls">
         <label className="catalog-search">
           <MagnifyingGlass size={20} aria-hidden="true" />
           <span className="sr-only">Search products</span>

@@ -9,6 +9,24 @@ it("keeps mock mode disabled in production even if built with --mode mock", asyn
   expect((await import("./mockMode")).MOCK_MODE).toBe(false);
 });
 
+it.each(["mock", "editor", "production"])("excludes the editor from production in %s mode", async (mode) => {
+  vi.stubEnv("MODE", mode);
+  vi.stubEnv("DEV", false);
+  vi.resetModules();
+  const flags = await import("./mockMode");
+  expect(flags.MOCK_MODE).toBe(false);
+  expect(flags.UI_EDITOR_MODE).toBe(false);
+});
+
+it.each(["development", "mock", "editor"])("makes the editor available in %s development without changing the data mode", async (mode) => {
+  vi.stubEnv("DEV", true);
+  vi.stubEnv("MODE", mode);
+  vi.resetModules();
+  const flags = await import("./mockMode");
+  expect(flags.UI_EDITOR_MODE).toBe(true);
+  expect(flags.MOCK_MODE).toBe(mode === "mock" || mode === "editor");
+});
+
 it("intercepts API calls and session restoration in mock mode without fetching", async () => {
   vi.stubEnv("MODE", "mock");
   vi.stubEnv("DEV", true);

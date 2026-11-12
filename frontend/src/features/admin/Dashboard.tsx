@@ -32,7 +32,7 @@ function Delta({ pct }: { pct: number | null | undefined }) {
 
 function Kpi({ label, value, icon, tone, sub }: { label: string; value?: ReactNode; icon: ReactNode; tone: string; sub?: ReactNode }) {
   return (
-    <div className={`card kpi-card tone-${tone}`}>
+    <div className={`card kpi-card tone-${tone}`} data-ui-id={`kpi-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
       <div className="row spread nowrap"><span className="l">{label}</span><span className="chip" aria-hidden="true">{icon}</span></div>
       {value === undefined ? <Skeleton h={32} w="60%" /> : <span className="v">{value}</span>}
       <div className="sub">{sub}</div>
@@ -63,7 +63,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      <header className="dash-hero">
+      <header className="dash-hero" data-ui-id="dashboard-hero">
         <div>
           <p className="eyebrow">{new Date().toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", timeZone: "Asia/Manila" })}</p>
           <h1>{greeting()}, {me.name.split(" ")[0]}</h1>
@@ -95,7 +95,7 @@ export default function Dashboard() {
       </div>
 
       <div className="dashboard-charts">
-        <section className="card dashboard-panel" aria-labelledby="rev">
+        <section className="card dashboard-panel" aria-labelledby="rev" data-ui-id="revenue-overview">
           <div className="dashboard-panel-heading">
             <div><h2 id="rev">Revenue overview</h2><p className="muted">{s ? <><strong className="num dashboard-chart-total">{peso(total)}</strong><span className="dashboard-chart-period">Last {range} days</span></> : " "}</p></div>
             <div className="seg" role="group" aria-label="Chart range">
@@ -124,7 +124,7 @@ export default function Dashboard() {
           ) : <Skeleton h={250} />}
         </section>
 
-        <section className="card dashboard-panel dashboard-status-panel" aria-labelledby="mix">
+        <section className="card dashboard-panel dashboard-status-panel" aria-labelledby="mix" data-ui-id="order-status">
           <div className="dashboard-panel-heading"><div><h2 id="mix">Order status</h2><p className="muted">Your orders, grouped by progress.</p></div></div>
           {s ? (!statusData.length ? <Empty icon={<Receipt size={28} aria-hidden="true" />} title="No orders yet" /> : (
             <div className="dashboard-status-body">
@@ -147,7 +147,7 @@ export default function Dashboard() {
         </section>
       </div>
 
-      <section className="card flush dashboard-latest" aria-labelledby="lo">
+      <section className="card flush dashboard-latest" aria-labelledby="lo" data-ui-id="latest-orders">
         <div className="dashboard-panel-heading dashboard-table-heading"><div><h2 id="lo">Latest orders</h2><p className="muted">Review recent orders and update their status.</p></div><Link to="/admin/orders" className="btn ghost sm">View all <CaretRight size={16} aria-hidden="true" /></Link></div>
         {orders.isLoading ? <div style={{ padding: 16 }}><Skeleton h={120} /></div> : orders.isError ? <ErrorState error={orders.error} retry={() => orders.refetch()} /> : !orders.data?.length ? (
           <Empty icon={<Receipt size={32} aria-hidden="true" />} title="No orders yet" hint="New orders will appear here." />
