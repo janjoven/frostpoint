@@ -1,9 +1,13 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useLayoutEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { GlobalHosts, Logo, Skeleton } from "./components/ui";
 import AuthPage from "./features/auth/AuthPage";
 import { restoreSession } from "./lib/api";
-import { homePath, isRider, isStaff, useAuth, useUI } from "./store";
+import { homePath, isRider, isStaff, useAuth } from "./store";
+import { MOCK_MODE, UI_EDITOR_MODE } from "./lib/mockMode";
+
+const MockToolbar = lazy(() => import("./mocks/MockToolbar"));
+const LayoutEditor = UI_EDITOR_MODE ? lazy(() => import("./devtools/EditorHost")) : null;
 
 const AdminApp = lazy(() => import("./features/admin/AdminApp"));
 const RiderApp = lazy(() => import("./features/rider/RiderApp"));
@@ -36,13 +40,15 @@ function Guard({ children, area }: { children: JSX.Element; area: "staff" | "rid
 }
 
 export default function App() {
+  const location = useLocation();
+  // Exported layout CSS uses this attribute to stay scoped to its original page.
+  useLayoutEffect(() => { document.documentElement.dataset.uiPage = location.pathname; }, [location.pathname]);
   const { user, ready, setUser } = useAuth();
-  const theme = useUI((s) => s.theme);
   const [splash, setSplash] = useState(() => {
+    if (MOCK_MODE) return false;
     try { return !sessionStorage.getItem("fp-splash"); } catch { return false; }
   });
 
-  useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
   useEffect(() => { restoreSession().then((u) => setUser(u)).catch(() => setUser(null)); }, [setUser]);
   const endSplash = () => {
     try { sessionStorage.setItem("fp-splash", "1"); } catch { /* ignore */ }
@@ -62,6 +68,8 @@ export default function App() {
         </Routes>
       </Suspense>
       <GlobalHosts />
+      {MOCK_MODE && <Suspense fallback={null}><MockToolbar /></Suspense>}
+      {LayoutEditor && <Suspense fallback={null}><LayoutEditor /></Suspense>}
     </>
   );
 }

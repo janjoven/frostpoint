@@ -1,4 +1,4 @@
-import { Trash } from "@phosphor-icons/react";
+import { CalendarBlank, Trash } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
@@ -150,9 +150,9 @@ export default function Checkout() {
         <Link to="/" className="help">Add more items</Link>
       </section>
 
-      <section className="card stack" aria-labelledby="dl">
+      <section className="card stack checkout-delivery-card" aria-labelledby="dl">
         <h2 id="dl">Delivery</h2>
-        <div className="seg" role="group" aria-label="Delivery method">
+        <div className="seg checkout-segment" role="group" aria-label="Delivery method">
           <button type="button" aria-pressed={mode === "delivery"} onClick={() => setMode("delivery")}>Delivery</button>
           <button type="button" aria-pressed={mode === "pickup"} onClick={() => setMode("pickup")}>Pickup</button>
         </div>
@@ -163,7 +163,7 @@ export default function Checkout() {
               <button type="button" className="pill" aria-pressed={addrId === "new"} onClick={() => pickAddress("new")}>{addrs.data?.length ? "+ New address" : "Address"}</button>
             </div>
             {chosen ? (
-              <div className="row spread nowrap">
+              <div className="row spread nowrap checkout-address-preview">
                 <div className="grow wrap-any"><strong>{chosen.location}</strong><div className="muted">{chosen.address}</div></div>
                 <button type="button" className="btn ghost icon" aria-label={`Remove saved address ${chosen.label}`} onClick={() => removeAddress(chosen)}><Trash size={18} aria-hidden="true" /></button>
               </div>
@@ -175,28 +175,30 @@ export default function Checkout() {
                   </select>)}
                 </Field>
                 <Field label="Street / barangay / landmark" error={errs.address}>{(p) => <textarea {...p} className="input" value={address} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" />}</Field>
-                <div className="row nowrap" style={{ gap: 12 }}>
+                <div className="checkout-save-address">
                   <label className="row nowrap" style={{ gap: 8 }}><input type="checkbox" checked={saveIt} onChange={(e) => setSaveIt(e.target.checked)} /> Save for next time as</label>
-                  <input className="input" style={{ maxWidth: 140 }} aria-label="Address name" value={label} maxLength={40} disabled={!saveIt} onChange={(e) => setLabel(e.target.value)} />
+                  <input className="input" aria-label="Address name" value={label} maxLength={40} disabled={!saveIt} onChange={(e) => setLabel(e.target.value)} />
                 </div>
               </>
             )}
           </>
         )}
-        {mode === "delivery" && <PinPicker value={pin} onChange={setPin} />}
+        {mode === "delivery" && <PinPicker value={pin} onChange={setPin} compact />}
         <Field label="Receiver name" error={errs.receiver_name}>{(p) => <input {...p} className="input" name="receiver_name" defaultValue={saved.receiver_name ?? user.name} autoComplete="name" />}</Field>
         <Field label="Mobile number" error={errs.phone}>{(p) => <input {...p} className="input" name="phone" type="tel" inputMode="tel" defaultValue={saved.phone ?? user.phone} autoComplete="tel" />}</Field>
         <Field label="Notes (optional)">{(p) => <input {...p} className="input" name="notes" maxLength={300} />}</Field>
       </section>
 
-      <section className="card stack" aria-labelledby="wn">
-        <h2 id="wn">{mode === "pickup" ? "Pickup time" : "Delivery time"}</h2>
-        <div className="pill-filters" role="group" aria-label="When">
-          <button type="button" className="pill" aria-pressed={when === "asap"} onClick={() => setWhen("asap")}>As soon as possible</button>
-          <button type="button" className="pill" aria-pressed={when === "tomorrow"} onClick={() => setWhen("tomorrow")}>Tomorrow 8 AM</button>
-          <button type="button" className="pill" aria-pressed={when === "custom"} onClick={() => setWhen("custom")}>Pick a time</button>
+      <section className="card stack checkout-time-card" aria-labelledby="wn">
+        <div className="checkout-time-heading">
+          <h2 id="wn">{mode === "pickup" ? "Pickup time" : "Delivery time"}</h2>
+          <button type="button" className="btn ghost sm checkout-custom-time" aria-pressed={when === "custom"} aria-expanded={when === "custom"} aria-controls="checkout-custom-date" onClick={() => setWhen("custom")}><CalendarBlank size={16} aria-hidden="true" /> Pick a time</button>
         </div>
-        {when === "custom" && <Field label="Date and time" error={errs.schedule}>{(p) => <input {...p} className="input" type="datetime-local" min={toLocalInput()} value={custom} onChange={(e) => setCustom(e.target.value)} />}</Field>}
+        <div className="seg checkout-segment checkout-time-segment" role="group" aria-label="When">
+          <button type="button" aria-pressed={when === "asap"} onClick={() => setWhen("asap")}>As soon as possible</button>
+          <button type="button" aria-pressed={when === "tomorrow"} onClick={() => setWhen("tomorrow")}>Tomorrow 8 AM</button>
+        </div>
+        <div id="checkout-custom-date" hidden={when !== "custom"}>{when === "custom" && <Field label="Date and time" error={errs.schedule}>{(p) => <input {...p} className="input" type="datetime-local" min={toLocalInput()} value={custom} onChange={(e) => setCustom(e.target.value)} />}</Field>}</div>
       </section>
 
       <section className="card stack" aria-labelledby="py">

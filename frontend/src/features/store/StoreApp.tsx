@@ -1,9 +1,10 @@
 import { Bell, Headset, House, Receipt, ShoppingCart, SignIn, SignOut } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense, lazy, useEffect, useState } from "react";
-import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
-import { Logo, Modal, Skeleton, ThemeToggle } from "../../components/ui";
+import { Link, Route, Routes, useLocation } from "react-router-dom";
+import { Logo, LogoName, Modal, Skeleton } from "../../components/ui";
 import { api } from "../../lib/api";
+import { storeNavTarget } from "../../lib/storeNavigation";
 import { useAuth, useCart } from "../../store";
 
 const Home = lazy(() => import("./Home"));
@@ -21,23 +22,22 @@ export default function StoreApp() {
   const loc = useLocation();
   const promos = useQuery({ queryKey: ["promos"], queryFn: () => api<any[]>("/promotions") });
   const unread = useQuery({ queryKey: ["unread"], queryFn: () => api<{ unread: number }>("/support/mine/unread"), enabled: !!user, refetchInterval: 20_000 });
-  useEffect(() => { document.getElementById("main")?.focus(); window.scrollTo(0, 0); }, [loc.pathname]);
+  useEffect(() => { document.getElementById("main")?.focus({ preventScroll: true }); window.scrollTo(0, 0); }, [loc.pathname]);
 
   const tab = (to: string, label: string, icon: JSX.Element, badge = 0) => (
-    <NavLink to={to} end={to === "/"} className="navlink">
-      {icon}<span>{label}</span>{badge > 0 && <span className="dot" role="status" aria-label={`${badge} new`}>{badge}</span>}
-    </NavLink>
+    <Link to={to} className="navlink" aria-current={storeNavTarget(loc.pathname) === to ? "page" : undefined} aria-label={`${label}${badge > 0 ? ", new activity" : ""}`} title={label}>
+      <span className="store-nav-icon">{icon}{badge > 0 && <span className="customer-notification" aria-hidden="true" />}</span>
+    </Link>
   );
 
   return (
     <>
       <header className="topbar">
-        <Link to="/" className="brand"><Logo /> FROSTPOINT</Link>
+        <Link to="/" className="brand"><Logo /><LogoName /></Link>
         <div className="row nowrap" style={{ gap: 4 }}>
-          <button className="btn ghost icon" onClick={() => setBell(true)} aria-label={`Promotions${promos.data?.length ? `, ${promos.data.length} active` : ""}`} style={{ position: "relative" }}>
-            <Bell size={22} aria-hidden="true" />{!!promos.data?.length && <span className="dot" style={{ top: 2, marginLeft: 8, minWidth: 16, height: 16 }}>{promos.data.length}</span>}
+          <button className="btn ghost icon" onClick={() => setBell(true)} aria-label={`Promotions${promos.data?.length ? ", new promotions" : ""}`} style={{ position: "relative" }}>
+            <Bell size={22} aria-hidden="true" />{!!promos.data?.length && <span className="customer-notification topbar-notification" aria-hidden="true" />}
           </button>
-          <ThemeToggle />
           {user ? <button className="btn ghost icon" onClick={() => logout()} aria-label="Sign out"><SignOut size={22} aria-hidden="true" /></button>
             : <Link to="/login" className="btn primary sm"><SignIn size={18} aria-hidden="true" /> Sign in</Link>}
         </div>
@@ -56,7 +56,7 @@ export default function StoreApp() {
           </Routes>
         </Suspense>
       </main>
-      <nav className="bottomnav always" aria-label="Main">
+      <nav className="bottomnav always store-nav" aria-label="Main">
         {tab("/", "Shop", <House size={22} aria-hidden="true" />)}
         {tab("/cart", "Cart", <ShoppingCart size={22} aria-hidden="true" />, count)}
         {tab("/orders", "Orders", <Receipt size={22} aria-hidden="true" />)}

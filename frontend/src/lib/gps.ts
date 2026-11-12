@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
+import { MOCK_MODE } from "./mockMode";
 
 export const GPS_INTERVAL_MS = 10_000;
 /** Fixes worse than this (a cell-tower guess, for example) would put the rider on the wrong street. */
@@ -22,6 +23,7 @@ export function useRiderGps(active: boolean) {
 
   useEffect(() => {
     if (!active) { setState("off"); setAccuracy(null); return; }
+    if (MOCK_MODE) { setState("sharing"); setAccuracy(15); return; }
     if (!navigator.geolocation) { setState("unsupported"); return; }
     setState("waiting");
     let last = 0;

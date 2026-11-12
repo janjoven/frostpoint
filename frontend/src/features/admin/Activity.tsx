@@ -11,6 +11,7 @@ const ICON: Record<string, ReactNode> = {
   Approved: <CheckCircle size={16} aria-hidden="true" />, Rejected: <XCircle size={16} aria-hidden="true" />,
 };
 const CLS: Record<string, string> = { Added: "ok", Approved: "ok", Deleted: "bad", Rejected: "bad", Edited: "warn" };
+const diffValue = (value: unknown) => value === undefined ? "—" : typeof value === "object" ? JSON.stringify(value) : String(value);
 
 function Diff({ meta }: { meta: any }) {
   const before = meta?.before ?? (meta?.changes && Object.fromEntries(Object.entries(meta.changes).map(([k, v]: any) => [k, v.before])));
@@ -21,9 +22,9 @@ function Diff({ meta }: { meta: any }) {
     <div className="diff">
       {keys.map((k) => (
         <div key={k} style={{ display: "contents" }}>
-          <span className="muted">{k}</span>
-          <span className="b wrap-any">{before?.[k] === undefined ? "—" : String(before[k])}</span>
-          <span className="a wrap-any"><ArrowRight size={12} aria-hidden="true" /> {after?.[k] === undefined ? "—" : String(after[k])}</span>
+          <span className="muted activity-change-field">{k.replace(/_/g, " ")}</span>
+          <span className="b wrap-any" aria-label={`Previous value: ${diffValue(before?.[k])}`}>{diffValue(before?.[k])}</span>
+          <span className="a wrap-any" aria-label={`New value: ${diffValue(after?.[k])}`}><ArrowRight size={12} aria-hidden="true" /> {diffValue(after?.[k])}</span>
         </div>
       ))}
     </div>
@@ -42,32 +43,32 @@ export default function Activity() {
   if (until) qs.set("until", new Date(until + "T23:59:59").toISOString());
   const q = useQuery({ queryKey: ["activity", qs.toString()], queryFn: () => api<any[]>("/admin/activity?" + qs) });
   return (
-    <div className="stack">
+    <div className="admin-detail-page admin-activity-page">
       <div className="page-title"><h1>Activity Log</h1></div>
-      <div className="card stack">
-        <div className="row">
-          <label className="row nowrap grow" style={{ gap: 6 }}><MagnifyingGlass size={20} aria-hidden="true" /><span className="sr-only">Search activity</span>
-            <input className="input" type="search" placeholder="Search description or user" value={term} onChange={(e) => setTerm(e.target.value)} /></label>
-          <label className="field"><span className="sr-only">From date</span><input className="input" type="date" value={since} onChange={(e) => setSince(e.target.value)} aria-label="From date" /></label>
-          <label className="field"><span className="sr-only">To date</span><input className="input" type="date" value={until} onChange={(e) => setUntil(e.target.value)} aria-label="To date" /></label>
+      <div className="card stack admin-activity-controls">
+        <div className="admin-activity-filters">
+          <label className="field activity-search-field"><span className="lbl">Search activity</span><span className="catalog-search"><MagnifyingGlass size={20} aria-hidden="true" />
+            <input className="input" type="search" placeholder="Search description or user" value={term} onChange={(e) => setTerm(e.target.value)} /></span></label>
+          <label className="field"><span className="lbl">From date</span><input className="input" type="date" value={since} max={until || undefined} onChange={(e) => setSince(e.target.value)} /></label>
+          <label className="field"><span className="lbl">To date</span><input className="input" type="date" value={until} min={since || undefined} onChange={(e) => setUntil(e.target.value)} /></label>
         </div>
-        <div className="pill-filters" role="group" aria-label="Filter by action">
+        <div className="pill-filters admin-activity-actions" role="group" aria-label="Filter by action">
           {ACTIONS.map((a) => <button key={a} className="pill" aria-pressed={action === a} onClick={() => setAction(a)}>{a}</button>)}
         </div>
       </div>
-      <div className="card stack">
+      <div className="card admin-activity-results">
         {q.isLoading ? <Skeleton h={160} /> : q.isError ? <ErrorState error={q.error} retry={() => q.refetch()} /> : !q.data?.length ? (
           <Empty icon={<ClockCounterClockwise size={32} aria-hidden="true" />} title="No activity found" />
         ) : (
-          <ol style={{ listStyle: "none", margin: 0, padding: 0 }} className="stack">
+          <ol className="admin-activity-list">
             {q.data.map((l) => (
-              <li key={l.id} style={{ paddingBottom: 12, borderBottom: "1px solid var(--border)" }}>
-                <div className="row spread nowrap">
+              <li key={l.id}>
+                <div className="row spread activity-entry-header">
                   <span className={`badge ${CLS[l.action] ?? ""}`}>{ICON[l.action]}{l.action}</span>
-                  <small className="muted">{fmtDateTime(l.created_at)}</small>
+                  <time className="muted" dateTime={l.created_at}>{fmtDateTime(l.created_at)}</time>
                 </div>
-                <p className="wrap-any" style={{ marginTop: 6 }}>{l.description}</p>
-                <small className="muted">{l.user_name} · {l.user_email}</small>
+                <p className="wrap-any activity-description">{l.description}</p>
+                <div className="activity-actor muted"><span>{l.user_name}</span><span>{l.user_email}</span></div>
                 <Diff meta={l.meta} />
               </li>))}
           </ol>)}

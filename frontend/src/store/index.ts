@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api, markSession, setToken } from "../lib/api";
+import { MOCK_MODE } from "../lib/mockMode";
 
 export type User = { id: number; email: string; name: string; role: "customer" | "staff" | "owner" | "admin" | "rider"; phone: string; address: string };
 export const isStaff = (u?: User | null) => !!u && ["staff", "owner", "admin"].includes(u.role);
@@ -46,9 +47,10 @@ export const useAuth = create<AuthState>((set) => ({
 export type Product = { id: number; name: string; category: string; price: string; uom: string; stock: number; description: string; badge: string; min_order_qty: number; low_stock_at: number; is_active: boolean };
 
 type CartState = { lines: Record<number, number>; set: (id: number, qty: number) => void; add: (id: number, qty: number) => void; clear: () => void };
+const CART_KEY = MOCK_MODE ? "fp-mock-cart" : "fp-cart";
 const saved = (() => {
   try {
-    return JSON.parse(localStorage.getItem("fp-cart") ?? "{}");
+    return JSON.parse(localStorage.getItem(CART_KEY) ?? "{}");
   } catch {
     return {};
   }
@@ -56,7 +58,7 @@ const saved = (() => {
 export const useCart = create<CartState>((set, get) => {
   const save = (lines: Record<number, number>) => {
     try {
-      localStorage.setItem("fp-cart", JSON.stringify(lines));
+      localStorage.setItem(CART_KEY, JSON.stringify(lines));
     } catch {
       /* storage unavailable */
     }
@@ -78,8 +80,6 @@ export const useCart = create<CartState>((set, get) => {
 type Toast = { id: number; text: string; action?: { label: string; run: () => void } };
 type ConfirmReq = { title: string; body?: string; confirm: string; danger?: boolean; input?: { label: string; required?: boolean; initial?: string }; resolve: (v: string | boolean | null) => void };
 type UIState = {
-  theme: "light" | "dark";
-  toggleTheme: () => void;
   toasts: Toast[];
   toast: (text: string, action?: Toast["action"]) => void;
   dismiss: (id: number) => void;
@@ -88,27 +88,8 @@ type UIState = {
   setNeedsUpdate: (fn: (() => void) | null) => void;
 };
 
-const initialTheme = (): "light" | "dark" => {
-  try {
-    const s = localStorage.getItem("fp-theme");
-    if (s === "light" || s === "dark") return s;
-  } catch {
-    /* ignore */
-  }
-  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-};
 let tid = 0;
 export const useUI = create<UIState>((set, get) => ({
-  theme: initialTheme(),
-  toggleTheme: () => {
-    const theme = get().theme === "dark" ? "light" : "dark";
-    try {
-      localStorage.setItem("fp-theme", theme);
-    } catch {
-      /* ignore */
-    }
-    set({ theme });
-  },
   toasts: [],
   toast: (text, action) => {
     const id = ++tid;

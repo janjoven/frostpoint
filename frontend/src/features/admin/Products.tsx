@@ -87,19 +87,20 @@ export default function Products() {
       ) : (
         <div className="grid cards">
           {list.map((p) => (
-            <article className="card stack" key={p.id} style={{ gap: 12, opacity: p.is_active ? 1 : 0.7 }}>
+            <article className="card stack admin-product-card" key={p.id} style={{ gap: 12, opacity: p.is_active ? 1 : 0.7 }}>
               <ProductArt category={p.category} badge={p.badge} />
-              <div className="row spread nowrap">
-                <h3>{p.name}</h3><span className="num">{peso(p.price)}/{p.uom}</span>
+              <div className="admin-product-heading">
+                <h3>{p.name}</h3>
+                <span className={`badge ${p.stock <= p.low_stock_at ? "warn" : "ok"}`}>{p.stock <= p.low_stock_at ? "Low stock" : "In stock"} · <span className="num">{p.stock}</span></span>
               </div>
               <div className="row spread">
-                <span className={`badge ${p.stock <= p.low_stock_at ? "warn" : "ok"}`}>{p.stock <= p.low_stock_at ? "Low stock" : "In stock"} · <span className="num">{p.stock}</span></span>
+                <span className="num admin-product-price"><strong>{peso(p.price)}</strong><small className="muted">/{p.uom}</small></span>
                 {!p.is_active && <span className="badge">Hidden</span>}
               </div>
-              <div className="row">
-                <button className="btn sm" onClick={() => stock.mutate(p)}>Stock</button>
-                <button className="btn sm" onClick={() => setEdit(p)}><PencilSimple size={16} aria-hidden="true" /> Edit</button>
-                <button className="btn sm danger" onClick={() => del.mutate(p)} aria-label={`Delete ${p.name}`}><Trash size={16} aria-hidden="true" /></button>
+              <div className="admin-product-actions">
+                <button className="btn sm" onClick={() => stock.mutate(p)} aria-label={`Update stock for ${p.name}`}><Package size={16} aria-hidden="true" /> Stock</button>
+                <button className="btn sm" onClick={() => setEdit(p)} aria-label={`Edit ${p.name}`}><PencilSimple size={16} aria-hidden="true" /> Edit</button>
+                <button className="btn sm danger" onClick={() => del.mutate(p)} aria-label={`Delete ${p.name}`}><Trash size={16} aria-hidden="true" /> Delete</button>
               </div>
             </article>
           ))}

@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["favicon.svg", "offline.html"],
+      includeAssets: ["favicon.png", "branding/*.webp", "offline.html"],
       manifest: {
         name: "FROSTPOINT",
         short_name: "Frostpoint",
