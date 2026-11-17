@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, CheckCircle, Clock, CreditCard, FileText, HandCoins, MagnifyingGlass, Plus, Receipt, SealCheck, ShoppingCart, Tray, Users } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
-import { Empty, Modal } from "../../components/ui";
+import { Empty, ErrorState, Modal } from "../../components/ui";
 import { peso } from "../../lib/format";
 import RequisitionSlip from "./RequisitionSlip";
 import RequisitionList, { getRequisitions } from "./RequisitionList";
@@ -10,6 +10,12 @@ import { loadPaymentDraft, paymentTotals } from "../../lib/directPaymentDraft";
 import { employeeStatuses, matchesCard, paymentPending, paymentReturned, paymentStates, purchasePending, purchaseStatuses, purchaseWorkflowStates, requisitionPending, uniqueStates, voucherStatuses } from "../../lib/amlStatuses";
 import { paymentEntries, voucherNetAmount } from "../../lib/paymentEntries";
 import VoucherPreview from "./VoucherPreview";
+import ERPRequisitionDetailPage from "./ERPRequisitionDetail";
+import { MOCK_MODE } from "../../lib/mockMode";
+import { summaryCount, useERPRequisitionSummary } from "../../lib/erpRequisitions";
+import ERPRecordsList from "./ERPRecordsList";
+import ERPRecordDetail from "./ERPRecordDetail";
+import { erpSummaryCount, useERPSectionSummaries } from "../../lib/erpRecords";
 
 const sections = [
   { id: "requisitions", slug: "requisitions", tone: "blue", label: "Requisition Slip", icon: FileText, hint: "Review requisition slips and their approval status." },
@@ -119,6 +125,8 @@ export default function AMLNetwork() {
   return <Routes>
     <Route index element={<AMLOverview />} />
     <Route path="new-requisition" element={<RequisitionSlip />} />
+    <Route path="requisitions/:reference" element={<ERPRequisitionDetailPage />} />
+    <Route path="records/:section/:reference" element={<ERPRecordDetail />} />
     <Route path="new-direct-payment-order" element={<DirectPaymentOrder />} />
     <Route path="disbursement-vouchers/:reference/print" element={<VoucherPreview />} />
     <Route path=":sectionSlug" element={<AMLListPage />} />
@@ -127,38 +135,41 @@ export default function AMLNetwork() {
 }
 
 function AMLOverview() {
+  const requisitions = useERPRequisitionSummary();
+  const records = useERPSectionSummaries();
   return <div className="admin-detail-page aml-page">
-    <div className="page-title"><div><div className="row"><h1>AML Network</h1><span className="badge">Mock preview</span></div><p className="muted aml-subtext">Payments, purchasing and employee records in one place.</p></div></div>
+    <div className="page-title"><div><div className="row"><h1>AML Network</h1>{MOCK_MODE && <span className="badge">Mock preview</span>}</div><p className="muted aml-subtext">Payments, purchasing and employee records in one place.</p></div></div>
     {sections.map(({ id, label }) => <section key={id} className="aml-group" aria-labelledby={`aml-group-${id}`}>
       <div className="row spread"><h2 id={`aml-group-${id}`}>{id === "employees" ? "Employee" : label}</h2>{id === "requisitions" && <NewRequisitionButton />}{id === "payments" && <NewPaymentButton />}</div>
-      {id === "vouchers" && <p className="muted aml-subtext">Payment Entry · Document status</p>}
-      {id === "purchases" && <p className="muted aml-subtext">Approval stages and order statuses are separate; a purchase order can appear in more than one card.</p>}
+      {id === "requisitions" && !MOCK_MODE && requisitions.isError && <ErrorState error={requisitions.error} retry={() => requisitions.refetch()} />}
+      {id !== "requisitions" && !MOCK_MODE && records[id].isError && <ErrorState error={records[id].error} retry={() => records[id].refetch()} />}
       <div className="dashboard-kpis aml-summary-grid">
         {views.filter((view) => view.section === id).map((view) => {
           const Icon = cardIcon(view);
           return <Link key={view.slug} to={`/admin/aml-network/${view.slug}`} className={`card kpi-card aml-summary-card tone-${cardTone(view)}`} data-ui-id={`aml-${view.slug}`}>
           <div className="row spread nowrap"><span className="l">{view.label}</span><span className="chip"><Icon size={20} aria-hidden="true" /></span></div>
-          <strong className="v">{id === "employees" ? employees.filter((person) => matchesCard(person.status, view.status)).length : recordsFor(view).length}<span className="sr-only"> {id === "employees" ? "employees" : "records"}</span></strong>
+          <strong className="v">{!MOCK_MODE ? id === "requisitions" ? requisitions.data && !requisitions.isError ? summaryCount(requisitions.data, view.status, view.statuses) : "—" : records[id].data && !records[id].isError ? erpSummaryCount(records[id].data!, view.status, view.statuses, view.field) : "—" : id === "employees" ? employees.filter((person) => matchesCard(person.status, view.status)).length : recordsFor(view).length}<span className="sr-only"> {id === "employees" ? "employees" : "records"}</span></strong>
           <span className="aml-card-action">View list <ArrowRight size={16} aria-hidden="true" /></span>
         </Link>; })}
       </div>
     </section>)}
-    <p className="muted aml-subtext">Preview counts use sample records and browser-local drafts. Grouped approval cards are proposed mappings for review.</p>
+    <p className="muted aml-subtext">{MOCK_MODE ? "Preview counts use sample records and browser-local drafts." : "Frostpoint requisitions and other record lists come from ERP. Creation forms save new requests to ERP when permitted."} Grouped approval cards use the workflow states listed in each view.</p>
   </div>;
 }
 
 function NewRequisitionButton() {
-  return <Link className="btn primary" to="/admin/aml-network/new-requisition" data-ui-id="aml-new-requisition"><Plus size={18} aria-hidden="true" /><strong>Add New Requisition Slip</strong></Link>;
+  return <Link className="btn primary" to="/admin/aml-network/new-requisition" data-ui-id="aml-new-requisition"><Plus size={18} aria-hidden="true" /><strong>Add Requisition Slip</strong></Link>;
 }
 
 function NewPaymentButton() {
-  return <Link className="btn primary" to="/admin/aml-network/new-direct-payment-order" data-ui-id="aml-new-direct-payment-order"><Plus size={18} aria-hidden="true" /><strong>New Direct Payment Order</strong></Link>;
+  return <Link className="btn primary" to="/admin/aml-network/new-direct-payment-order" data-ui-id="aml-new-direct-payment-order"><Plus size={18} aria-hidden="true" /><strong>Add Direct Payment Order</strong></Link>;
 }
 
 function AMLListPage() {
   const { sectionSlug } = useParams();
   const current = views.find((item) => item.slug === sectionSlug);
   if (current?.section === "requisitions") return <RequisitionList key={current.slug} title={current.label} status={current.status} statuses={current.statuses} />;
+  if (current && !MOCK_MODE) return <ERPRecordsList key={current.slug} section={current.section} title={current.label} status={current.status} statuses={current.statuses} field={current.field} />;
   return current ? <AMLRecords key={current.slug} view={current} /> : <Navigate to="/admin/aml-network" replace />;
 }
 
@@ -183,7 +194,7 @@ function AMLRecords({ view }: { view: ListView }) {
 
   return (
     <div className="admin-detail-page aml-page">
-      <Link className="aml-back-link" to="/admin/aml-network"><ArrowLeft size={17} aria-hidden="true" /> AML Network</Link>
+      <Link className="aml-back-link" to="/admin/aml-network"><ArrowLeft size={17} aria-hidden="true" /> Back</Link>
       <div className="page-title"><div><div className="row"><h1>{current.label}</h1><span className="badge">Mock preview</span></div><p className="muted aml-subtext">{current.hint}</p></div>{section === "payments" && <NewPaymentButton />}</div>
       {view.statuses && <details className="aml-mapping-note"><summary>Proposed group · {view.statuses.length} workflow states</summary><p className="muted aml-subtext">For UI review; ERP field mapping and permissions still need confirmation.</p><ul>{view.statuses.map((state) => <li key={state}>{state}</li>)}</ul></details>}
       {section === "purchases" && <p className="muted aml-subtext">Approval Stage filters the workflow. Order Status filters fulfillment. The two values are independent.</p>}

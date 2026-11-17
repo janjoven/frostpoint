@@ -182,3 +182,23 @@ class AppSetting(Base):
     __tablename__ = "app_settings"
     key: Mapped[str] = mapped_column(String(60), primary_key=True)
     value: Mapped[str] = mapped_column(Text)
+
+
+class ERPRequisitionSubmission(Base):
+    __tablename__ = "erp_requisition_submissions"
+    request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), nullable=False)
+    body_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="new")
+    reference: Mapped[str] = mapped_column(String(140), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ERPDirectPaymentSubmission(Base):
+    __tablename__ = "erp_direct_payment_submissions"
+    request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), nullable=False)
+    body_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="new")
+    reference: Mapped[str] = mapped_column(String(140), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

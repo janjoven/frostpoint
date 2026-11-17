@@ -1,3 +1,4 @@
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
 
@@ -13,6 +14,14 @@ class Settings(BaseSettings):
     seed_demo: bool = True
     # Free key from openrouteservice.org. Without one, tracking falls back to a straight line and a rough ETA.
     ors_api_key: str = ""
+    # Backend-only credentials for the AML ERP integration; never expose through VITE_*.
+    erp_base_url: str = ""
+    erp_api_key: SecretStr = SecretStr("")
+    erp_api_secret: SecretStr = SecretStr("")
+    erp_requisition_prefix: str = "FRP-"
+    erp_requisition_writes_enabled: bool = False
+    erp_requisition_create_enabled: bool = False
+    erp_dpo_create_enabled: bool = False
 
 
 settings = Settings()

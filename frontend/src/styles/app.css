@@ -613,13 +613,14 @@ body:has(.store-nav) .toasts { bottom: calc(88px + env(safe-area-inset-bottom));
 .aml-summary-card { color: var(--text); text-decoration: none; }
 .aml-page .aml-summary-grid .aml-summary-card { min-height: 140px; padding: 16px; background: linear-gradient(135deg, var(--surface-solid) 15%, var(--tone-soft) 100%); }
 .aml-group { display: grid; gap: 12px; margin-top: 4px; }
-.aml-page .aml-group h2 { margin: 0; font-size: 1rem; font-weight: 600; }
+.aml-page .aml-group h2 { margin: 0; font-size: 1.25rem; line-height: 1.4; font-weight: 600; }
 .aml-summary-card .l { max-width: 170px; }
 .aml-summary-card .aml-card-action { color: var(--tone); }
 .aml-card-action { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; font-size: 0.75rem; font-weight: 600; color: var(--primary); }
 .aml-summary-card:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 .aml-summary-card:hover .aml-card-action { text-decoration: underline; }
-.aml-back-link { display: inline-flex; align-items: center; justify-self: start; gap: 7px; min-height: 40px; font-size: 0.8125rem; font-weight: 500; }
+.aml-back-link { display: inline-flex; align-items: center; justify-content: center; justify-self: start; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid var(--border); border-radius: var(--r-md); background: #fff; color: var(--text); font-size: 0.875rem; font-weight: 500; text-decoration: none; transition: background var(--dur-fast); }
+.aml-back-link:hover { background: var(--primary-soft); text-decoration: none; }
 @container (max-width: 850px) { .aml-page .aml-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @container (max-width: 380px) { .aml-page .aml-summary-grid { grid-template-columns: minmax(0, 1fr); } }
 .aml-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 16px 12px; }
@@ -1071,3 +1072,7 @@ details > summary { cursor: pointer; min-height: 32px; color: var(--primary); fo
   .order-print-note p { white-space: pre-wrap; }
   .order-print-footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #dce4eb; color: #526175; font-size: 9pt; }
 }
+.erp-edit-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.erp-record-value { white-space: pre-wrap; overflow-wrap: anywhere; }
+.erp-record-fields { margin-top: 1rem; }
+.erp-edit-fields:disabled .input { opacity: 1; color: var(--text, #16365d); cursor: default; }

@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { Field } from "../../components/ui";
 import { emptyPaymentDraft, loadPaymentDraft, PaymentDraft, PaymentField, PaymentRow, paymentTotals, savePaymentDraft } from "../../lib/directPaymentDraft";
 import { peso } from "../../lib/format";
+import { MOCK_MODE } from "../../lib/mockMode";
+import AddERPDirectPaymentOrder from "./AddERPDirectPaymentOrder";
 
 type Column = { key: string; label: string; type?: "number" | "date" | "checkbox"; required?: boolean };
 const referenceColumns: Column[] = [{ key: "type", label: "Reference Type" }, { key: "amount", label: "Amount", type: "number" }];
@@ -44,6 +46,10 @@ function FormSection({ title, children }: { title?: string; children: ReactNode 
 }
 
 export default function DirectPaymentOrder() {
+  return MOCK_MODE ? <LocalDirectPaymentDraft /> : <AddERPDirectPaymentOrder />;
+}
+
+function LocalDirectPaymentDraft() {
   const [draft, setDraft] = useState<PaymentDraft>(() => loadPaymentDraft() ?? emptyPaymentDraft());
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -58,7 +64,7 @@ export default function DirectPaymentOrder() {
     catch { setError("This browser could not save the draft. Check your browser storage settings and try again."); }
   }
   return <div className="admin-detail-page aml-page requisition-page dpo-page">
-    <Link className="aml-back-link" to="/admin/aml-network"><ArrowLeft size={17} aria-hidden="true" /> AML Network</Link>
+    <Link className="aml-back-link" to="/admin/aml-network"><ArrowLeft size={17} aria-hidden="true" /> Back</Link>
     <form className="stack requisition-form" onSubmit={save}>
       <div className="page-title"><div><div className="row"><h1>New Direct Payment Order</h1><span className={`badge ${saved ? "ok" : "warn"}`}>{saved ? "Saved locally" : "Not saved"}</span></div><p className="muted aml-subtext">Prepare a direct payment order and its supporting details.</p></div><div className="row"><Link className="btn" to="/admin/aml-network/direct-payment-orders">Cancel</Link><button type="submit" className="btn primary"><FloppyDisk size={18} aria-hidden="true" />Save draft</button></div></div>
       <div className="card flush">

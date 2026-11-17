@@ -1,0 +1,8 @@
+{
+  "doctype": "Client Script",
+  "name": "Requisition Slip - Frostpoint Filter",
+  "dt": "Requisition Slip",
+  "view": "List",
+  "enabled": 1,
+  "script": "// Frappe Client Script: DocType = Requisition Slip, View = List, Enabled = true.\n// Add alongside the existing ACCSYS script. Do not replace that script.\n(() => {\n  const settings = (frappe.listview_settings[\"Requisition Slip\"] ||= {});\n  const previousOnload = settings.onload;\n  settings.onload = function (listview) {\n    previousOnload?.call(this, listview);\n    if (listview.$frostpoint_checkbox) return;\n    const idFilter = listview.page.fields_dict.name;\n    if (!idFilter) return;\n    const prefix = \"FRP-%\";\n    const label = $('<label class=\"checkbox\" style=\"margin:0 12px;align-self:center;white-space:nowrap\"><input type=\"checkbox\"><span>FROSTPOINT</span></label>')\n      .appendTo(listview.filter_area.standard_filters_wrapper);\n    const checkbox = label.find(\"input\");\n    listview.$frostpoint_checkbox = checkbox;\n    let previousId = \"\";\n    checkbox.prop(\"checked\", idFilter.get_value() === prefix);\n    checkbox.on(\"change\", async () => {\n      if (checkbox.prop(\"checked\")) {\n        previousId = idFilter.get_value() || \"\";\n        await idFilter.set_value(prefix);\n      } else if (idFilter.get_value() === prefix) {\n        await idFilter.set_value(previousId);\n      }\n      listview.start = 0;\n      listview.refresh();\n    });\n    const previousChange = idFilter.df.onchange;\n    idFilter.df.onchange = function (...args) {\n      checkbox.prop(\"checked\", idFilter.get_value() === prefix);\n      return previousChange?.apply(this, args);\n    };\n  };\n})();\n"
+}

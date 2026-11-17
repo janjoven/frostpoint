@@ -43,6 +43,135 @@ Use **Ctrl+Z** to undo applied editor changes and **Ctrl+Shift+Z** or **Ctrl+Y**
 
 The editor prefers `data-ui-id` hooks when present and otherwise generates structural selectors. Structural selectors can target a different element after markup or list ordering changes. Add a unique `data-ui-id` to important elements before editing them when you need stable exports. The editor does not edit React markup, business logic or backend data.
 
+## AML ERP requisitions
+
+In real API mode, all AML section cards, paginated lists, search, status filters,
+and record details read from ERP through FastAPI. Requisitions also support a With MR
+filter. `npm run dev:mock` continues to use browser-local sample records.
+Live ERP access is restricted to local Admin accounts. No ERP credentials are sent
+to the frontend, and ERP responses are excluded from service-worker caching.
+
+| AML section | ERP DocType | Status mapping |
+| --- | --- | --- |
+| Requisition Slip | Requisition Slip | Workflow State |
+| Direct Payment Order | Direct Payment Order | Workflow State |
+| Purchase Order | Purchase Order | Workflow State and fulfillment Status, separately |
+| Disbursement Voucher | Payment Entry | `docstatus`: Draft / Submitted / Cancelled |
+| Employee List | Employee | Employment Status |
+
+Assign the dedicated integration role Select and Read on each DocType and assign
+that role to the integration user. List and detail adapters are read-only. Dedicated
+creation endpoints are described below; approval, posting, payment execution, and
+deletion remain in ERP. The non-requisition
+lists include all companies accessible to that ERP user, without name-prefix filters.
+Source amounts and currency codes are retained; a missing currency is not replaced
+with an assumed PHP symbol.
+
+Employee list and detail requests fetch only a fixed work-directory projection:
+record ID, name, company, department, designation, company email, joining date,
+employment type, branch, status, and modification timestamp. They do not fetch the
+full HR document. Financial details use allowlisted scalar and child-table fields.
+Payment Entry reviews display actual references, amounts, and available payment
+breakdowns. Official voucher printing stays in ERP; real API mode does not put
+live records into the sample voucher/PDF template.
+
+Set these in the root `.env` (not a frontend `.env`):
+
+```dotenv
+ERP_BASE_URL=https://erp.amlgroupofcompanies.com
+ERP_API_KEY=
+ERP_API_SECRET=
+ERP_REQUISITION_PREFIX=FRP-
+ERP_REQUISITION_CREATE_ENABLED=false
+ERP_DPO_CREATE_ENABLED=false
+ERP_REQUISITION_WRITES_ENABLED=false
+```
+
+Confirm the environment and approved integration user with the ERP administrator.
+For a Frappe ERP, open that user from the User list, go to Settings (if present),
+then API Access. Obtain the API Key and API Secret. Generating new keys can replace
+existing credentials, so do not regenerate another integration's keys.
+See the [Frappe authentication documentation](https://docs.frappe.io/framework/user/en/api/rest#authentication).
+
+Keep credentials in the ignored root `.env`; never commit them or use a `VITE_`
+prefix. Compose passes these settings only to FastAPI. After changing environment
+values or backend source, run `docker compose up -d --build api` from the root.
+Vite reloads frontend edits, but the current API container needs rebuilding for
+backend code changes.
+
+AML Network defaults to Frostpoint's `FRP-` requisitions. The backend prefix scopes
+the list, counts, searches, and detail access; there is no source checkbox in AML.
+Other AML sections continue to include all accessible companies. The Pending
+Approval card groups the pending and forwarded workflow states listed in the UI;
+it does not perform an ERP approval action.
+
+Editing is disabled by default. To enable it after confirming the target environment,
+grant the integration user Write permission on Requisition Slip and set
+`ERP_REQUISITION_WRITES_ENABLED=true`, then recreate the API container. Each record
+also requires ERP document-level Write permission; Frappe enforces its workflow
+and field permissions when saving. Updates include the original modification
+timestamp to reject stale edits. Approval fields and workflow state are read-only.
+The editor preserves unedited item amounts, accounting references, and attachments;
+adding/removing item rows on existing records is not supported.
+
+**Add Requisition Slip** creates a new Frostpoint request through the standard ERP
+resource API when `ERP_REQUISITION_CREATE_ENABLED=true` and the ERP user has Create
+permission on Requisition Slip. The backend controls the naming series
+`FRP-RS-.YYYY.-.######`; it never accepts caller-supplied names, workflow states,
+approval fields, or permission-bypass flags. ERP chooses the sequence and initial
+workflow state. Required fields are cost center, date, requester, and at least one
+item with an ERP UOM and positive quantity. Linked searches need Select access to
+Cost Center, Project, UOM, and Equipment (where used), subject to ERP user restrictions.
+Creating requisitions does not grant Write, Delete, or approval permissions.
+
+Unfinished forms are retained locally, but **Create in ERP** transmits to the
+configured ERP. Each submission carries a UUID. A durable local submission ledger
+serializes duplicates and stores the resulting ERP ID; uncertain network outcomes
+are checked against ERP's existing `custom_client_action_id` field and are never
+blindly re-inserted. If ERP assigns an unexpected prefix, the response reports it
+and prevents another insert. The form supports checking a pending submission after
+a page closes. ERP still enforces its business validations and workflow permissions.
+
+The requested ERP-only FROSTPOINT checkbox is supplied in
+[`erp_customizations/requisition_slip_frostpoint.js`](erp_customizations/requisition_slip_frostpoint.js).
+Install it as a separate List Client Script using the ERP administrator account;
+see [`erp_customizations/README.md`](erp_customizations/README.md). It preserves the
+existing ACCSYS script and filters IDs with `FRP-%`. The integration user does not
+need permission to manage Client Scripts.
+
+### Direct Payment Order creation
+
+**Add Direct Payment Order** saves a payment request to ERP when
+`ERP_DPO_CREATE_ENABLED=true` and the integration user has Create on Direct Payment
+Order. New IDs use `FRP-DPO-.YYYY.-.#####`. Existing payment lists still include all
+accessible ERP orders. Mock mode keeps its separate local preview form.
+
+The form uses ERP department choices, Employee/Supplier payees, and permission-aware
+link searches. Required core lookup access is Select on Company, Account, Cost Center,
+and the selected payee's DocType. UOM, Project, Equipment, Requisition Slip, Bank
+Account, Tax Category, and Cash Advance Liquidation need Select access when used.
+The backend verifies company, cost center, payee, and expense-account selections;
+account and cost-center searches are constrained to the selected company.
+
+Expense amounts are validated against quantity × unit cost when both are supplied.
+The backend independently computes subtotal, percentage/fixed discounts, taxes, and
+total using decimal rounding. Derived total fields are not accepted from the browser.
+Approval, audit, paid, and cleared flags cannot be supplied through the creation API.
+Creating an order does not create a Payment Entry, execute a transfer, or invoke
+approval actions. ERP validates the request and chooses its initial workflow state.
+
+The separate payment submission ledger provides the same duplicate/retry protection
+as requisitions. An appended `Frostpoint submission ID: FRP-DPO:<UUID>` line in
+Internal Notes supports reconciling uncertain outcomes without requiring an ERP
+custom field. Unconfirmed inserts are never blindly repeated. Editing the request,
+approving it, and processing its payment remain ERP actions.
+
+Mappings were checked against the target ERP's form and child-table metadata.
+The API uses a fixed set of DocTypes and an allowlist of exposed/editable fields.
+No ERP writes are required for setup or automated tests. Run the isolated adapter
+tests with `docker compose exec api python -m pytest -q erp_tests`; these use fake
+ERP responses and never connect to a database or the live ERP.
+
 ## Layout
 - `backend/` FastAPI + SQLAlchemy 2 + Alembic. Pricing, stock, status transitions and role checks are enforced server-side (`app/services/core.py`, `app/deps.py`).
 - `frontend/` Vite + React + TypeScript, `vite-plugin-pwa` (installable, offline shell, update toast).
