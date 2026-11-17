@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { Empty, Modal } from "../../components/ui";
 import { loadDraft } from "./RequisitionSlip";
 import { matchesCard, requisitionStates } from "../../lib/amlStatuses";
+import { MOCK_MODE } from "../../lib/mockMode";
+import ERPRequisitionList from "./ERPRequisitionList";
 
 type Requisition = {
   reference: string; status: string; projectName: string; withMR: boolean;
@@ -23,7 +25,11 @@ export function getRequisitions(): Requisition[] {
   return draft.costCenter.trim() ? [{ reference: "LOCAL-DRAFT", status: "Draft", projectName: draft.projectName, withMR: draft.withMR, requestedBy: draft.requestedBy, costCenter: draft.costCenter, date: draft.date, local: true }, ...samples] : samples;
 }
 
-export default function RequisitionList({ title, status, statuses }: { title: string; status?: string; statuses?: string[] }) {
+export default function RequisitionList(props: { title: string; status?: string; statuses?: string[] }) {
+  return MOCK_MODE ? <MockRequisitionList {...props} /> : <ERPRequisitionList {...props} />;
+}
+
+function MockRequisitionList({ title, status, statuses }: { title: string; status?: string; statuses?: string[] }) {
   const [search, setSearch] = useState("");
   const [withMR, setWithMR] = useState(false);
   const [statusFilter, setStatusFilter] = useState(statuses ? "__group" : status ?? "");
@@ -34,7 +40,7 @@ export default function RequisitionList({ title, status, statuses }: { title: st
     [record.reference, record.projectName, record.requestedBy, record.costCenter, record.status].some((value) => value.toLowerCase().includes(term))
   );
   return <div className="admin-detail-page aml-page">
-    <Link className="aml-back-link" to="/admin/aml-network"><ArrowLeft size={17} aria-hidden="true" /> AML Network</Link>
+    <Link className="aml-back-link" to="/admin/aml-network"><ArrowLeft size={17} aria-hidden="true" /> Back</Link>
     <div className="page-title"><div><div className="row"><h1>{title}</h1><span className="badge">Mock preview</span></div><p className="muted aml-subtext">Review requisition slips, projects and approval status.</p></div><Link className="btn primary" to="/admin/aml-network/new-requisition"><Plus size={18} aria-hidden="true" /><strong>Add New Requisition Slip</strong></Link></div>
     {statuses && <details className="aml-mapping-note"><summary>Proposed group · {statuses.length} workflow states</summary><p className="muted aml-subtext">Includes pending and forwarded approval stages; mapping awaits ERP review.</p><ul>{statuses.map((state) => <li key={state}>{state}</li>)}</ul></details>}
     <section className="card flush" aria-label="Requisition slips">

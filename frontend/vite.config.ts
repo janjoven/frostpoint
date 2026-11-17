@@ -29,6 +29,10 @@ export default defineConfig({
         globIgnores: ["**/assets/Map-*"],
         runtimeCaching: [
           {
+            urlPattern: ({ url }) => url.pathname.startsWith("/api/admin/erp/"),
+            handler: "NetworkOnly",
+          },
+          {
             urlPattern: ({ url }) => url.pathname.startsWith("/assets/Map-"),
             handler: "CacheFirst",
             options: { cacheName: "map-assets", expiration: { maxEntries: 4 } },
@@ -47,6 +51,6 @@ export default defineConfig({
       },
     }),
   ],
-  server: { proxy: { "/api": "http://localhost:8000" } },
+  server: { proxy: { "/api": "http://127.0.0.1:8088" } },
   test: { environment: "node" },
 });

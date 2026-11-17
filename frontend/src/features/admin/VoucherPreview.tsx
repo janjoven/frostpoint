@@ -5,6 +5,8 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import { Button, Empty } from "../../components/ui";
 import { PaymentEntry, VoucherPrintOptions, paymentEntries, voucherAmountWords, voucherMoney, voucherNetAmount, voucherPrintConfig } from "../../lib/paymentEntries";
 import { createVoucherPdf } from "../../lib/voucherPdf";
+import { MOCK_MODE } from "../../lib/mockMode";
+import ERPRecordDetail from "./ERPRecordDetail";
 
 function VoucherDocument({ entry, options }: { entry: PaymentEntry; options: VoucherPrintOptions }) {
   return <article className="voucher-document" aria-label={`Disbursement voucher ${entry.reference}`}>
@@ -55,7 +57,7 @@ function VoucherPreviewContent() {
   const printError = useCallback(() => setError("Printing is unavailable. Download the PDF and print it from your PDF viewer."), []);
   const from = (location.state as { from?: string } | null)?.from;
   const back = from?.startsWith("/admin/aml-network/") ? from : "/admin/aml-network/disbursement-vouchers";
-  if (!entry) return <div className="admin-detail-page"><Link className="aml-back-link" to={back}><ArrowLeft size={17} aria-hidden="true" /> Voucher list</Link><Empty icon={<FilePdf size={32} />} title="Voucher not found" hint="Return to the list and select a sample voucher." /></div>;
+  if (!entry) return <div className="admin-detail-page"><Link className="aml-back-link" to={back}><ArrowLeft size={17} aria-hidden="true" /> Back</Link><Empty icon={<FilePdf size={32} />} title="Voucher not found" hint="Return to the list and select a sample voucher." /></div>;
 
   async function pdf(action: "preview" | "download") {
     if (!entry) return;
@@ -69,7 +71,7 @@ function VoucherPreviewContent() {
     finally { if (alive.current) setBusy(""); }
   }
   return <div className={`admin-detail-page aml-page voucher-preview-page${fullPage ? " voucher-full-page" : ""}`}>
-    <Link className="aml-back-link" to={back}><ArrowLeft size={17} aria-hidden="true" /> Disbursement Voucher List</Link>
+    <Link className="aml-back-link" to={back}><ArrowLeft size={17} aria-hidden="true" /> Back</Link>
     <div className="page-title"><div><div className="row"><h1>{entry.reference}</h1><span className={`badge ${entry.status === "Submitted" ? "ok" : entry.status === "Cancelled" ? "bad" : "warn"}`}>{entry.status}</span></div><p className="muted aml-subtext">Disbursement Voucher / Payment Entry · Sample preview</p></div>
       <div className="row voucher-actions"><button type="button" className="btn" aria-pressed={fullPage} onClick={() => setFullPage(!fullPage)}>{fullPage ? <X size={18} aria-hidden="true" /> : <ArrowsOut size={18} aria-hidden="true" />}{fullPage ? "Standard view" : "Full page"}</button><Button loading={busy === "download"} disabled={!!busy || printing} onClick={() => pdf("download")}><FilePdf size={18} aria-hidden="true" />Download PDF</Button><Button className="primary" disabled={!!busy || printing} onClick={() => { setError(""); setPrinting(true); }}><Printer size={18} aria-hidden="true" />Print</Button></div>
     </div>
@@ -90,5 +92,5 @@ function VoucherPreviewContent() {
 
 export default function VoucherPreview() {
   const { reference } = useParams();
-  return <VoucherPreviewContent key={reference} />;
+  return MOCK_MODE ? <VoucherPreviewContent key={reference} /> : <ERPRecordDetail key={reference} sectionOverride="vouchers" />;
 }

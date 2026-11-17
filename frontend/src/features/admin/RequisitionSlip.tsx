@@ -2,6 +2,8 @@ import { ArrowLeft, ClipboardText, FloppyDisk, Plus, Trash } from "@phosphor-ico
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { Field } from "../../components/ui";
+import { MOCK_MODE } from "../../lib/mockMode";
+import AddERPRequisition from "./AddERPRequisition";
 
 type Item = { id: string; name: string; uom: string; quantity: string };
 type Slip = {
@@ -29,6 +31,10 @@ export function loadDraft(): Slip {
 }
 
 export default function RequisitionSlip() {
+  return MOCK_MODE ? <LocalRequisitionDraft /> : <AddERPRequisition />;
+}
+
+function LocalRequisitionDraft() {
   const [slip, setSlip] = useState<Slip>(loadDraft);
   const [selected, setSelected] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
@@ -56,7 +62,7 @@ export default function RequisitionSlip() {
   const allSelected = slip.items.length > 0 && selected.length === slip.items.length;
 
   return <div className="admin-detail-page aml-page requisition-page">
-    <Link className="aml-back-link" to="/admin/aml-network"><ArrowLeft size={17} aria-hidden="true" /> AML Network</Link>
+    <Link className="aml-back-link" to="/admin/aml-network"><ArrowLeft size={17} aria-hidden="true" /> Back</Link>
     <form className="stack requisition-form" onSubmit={save}>
       <div className="page-title">
         <div><div className="row"><h1>New Requisition Slip</h1><span className={`badge ${saved ? "ok" : "warn"}`}>{saved ? "Saved locally" : "Not saved"}</span></div><p className="muted aml-subtext">Prepare a requisition for supplies, materials or equipment.</p></div>
@@ -104,7 +110,7 @@ export default function RequisitionSlip() {
           <Field label="Internal Notes">{(props) => <textarea {...props} className="input requisition-notes" value={slip.notes} onChange={(event) => update("notes", event.target.value)} rows={4} />}</Field>
         </section>
       </div>
-      <p className="muted aml-subtext">Drafts are saved in this browser. ERP submission is not connected yet. <Link to="/admin/aml-network/requisitions">View requisition list</Link></p>
+      <p className="muted aml-subtext">This new draft is saved only in this browser. Creating new ERP requisitions is not connected yet. <Link to="/admin/aml-network/requisitions">View requisition list</Link></p>
       <div role="status" aria-live="polite">{saved && <span className="requisition-save-message">Draft saved in this browser.</span>}</div>
       {error && <div className="err" role="alert">{error}</div>}
     </form>
